@@ -1,0 +1,529 @@
+/* ===== NEOBRUTALIST DESIGN SYSTEM ===== */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #e4e7ec;
+  --purple: #594192;
+  --blue: #5fbbe7;
+  --black: #0d0d0d;
+  --white: #ffffff;
+  --border: 3px solid var(--black);
+  --shadow: 5px 5px 0px var(--black);
+  --shadow-lg: 7px 7px 0px var(--black);
+  --radius: 14px;
+  --font-body: 'Space Grotesk', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  font-family: var(--font-body);
+  color: var(--black);
+  overflow-x: hidden;
+}
+
+/* ===== GEM CLUSTER DECORATION ===== */
+.gem-cluster {
+  position: fixed;
+  width: 90px;
+  height: 110px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gem {
+  position: absolute;
+  width: 28px;
+  height: 45px;
+}
+
+/* Triangular arrangement: 1 on top-center, 2 on bottom */
+.gem--top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) rotate(-5deg);
+}
+
+.gem--bottom-left {
+  bottom: 0;
+  left: 4px;
+  transform: rotate(8deg);
+}
+
+.gem--bottom-right {
+  bottom: 6px;
+  right: 4px;
+  transform: rotate(-10deg);
+}
+
+/* ===== LAYOUT ===== */
+.app-wrapper {
+  position: relative;
+  min-height: 100vh;
+  padding: 40px 32px 80px;
+  max-width: 1100px;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+/* ===== HERO HEADER ===== */
+.hero {
+  margin-top: 20vh;
+  margin-bottom: 40vh;
+  margin-left: 11vw;
+  display: block;
+  position: relative;
+  z-index: 5;
+}
+
+.hero__title {
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-weight: 700;
+  color: var(--purple);
+  letter-spacing: -1px;
+  line-height: 1.1;
+  display: block;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hero__title:hover {
+  transform: skewX(-10deg) rotate(-2deg) translateY(-2px);
+}
+
+.hero__subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+  margin-top: 12px;
+  /* 'A' in Inter Bold is roughly 1.4-1.5ch wide.
+     We use the exact same responsive font size calculation as the title. */
+  margin-left: calc(clamp(2.4rem, 5vw, 4rem) * 1.5);
+  letter-spacing: 0.03em;
+  background: rgba(89, 65, 146, 0.25);
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: inline-block;
+  cursor: default;
+  transition: background 0.2s, color 0.2s;
+}
+
+.hero__subtitle:hover {
+  background: rgba(89, 65, 146, 0.4);
+  color: #111;
+}
+
+/* ===== CELL LAYOUT (Offset / Staggered) ===== */
+.cells {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.cell {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 32px;
+  position: relative;
+  transition: background 0.3s ease, opacity 0.3s ease;
+}
+
+/* Active step: solid white with purple accent */
+.cell--active {
+  background: var(--white);
+  opacity: 1;
+  border-color: var(--purple);
+  box-shadow: 6px 6px 0px var(--purple);
+}
+
+/* Inactive / future steps: transparent glass effect */
+.cell--inactive {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0.65;
+  border-style: dashed;
+}
+
+/* Suppress all inner hover effects inside inactive cells */
+.cell--inactive .cell__label:hover {
+  background: transparent;
+  color: var(--purple);
+}
+
+.cell--inactive .cell__title:hover {
+  color: var(--black);
+  transform: none;
+}
+
+.cell--inactive .status-badge:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--black);
+}
+
+/* Done steps: slightly muted */
+.cell--done {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: #aaa;
+  box-shadow: 3px 3px 0px #aaa;
+}
+
+/* Offset alternating cells */
+.cell:nth-child(odd) {
+  margin-left: 0px;
+  margin-right: 48px;
+}
+
+.cell:nth-child(even) {
+  margin-left: 48px;
+  margin-right: 0px;
+}
+
+.cell__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cell__label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--purple);
+  border: 2px solid var(--purple);
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-block;
+  transition: background 0.15s, color 0.15s;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.cell__label:hover {
+  background: var(--purple);
+  color: var(--white);
+}
+
+.cell__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--black);
+  display: inline-block;
+  cursor: default;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s;
+}
+
+.cell__title:hover {
+  color: var(--purple);
+  transform: skewX(-6deg) rotate(-1.5deg);
+}
+
+/* ===== FILE UPLOADER ===== */
+.uploader {
+  border: var(--border);
+  border-style: dashed;
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  background: var(--bg);
+  border-width: 3px;
+}
+
+.uploader:hover,
+.uploader.drag-over {
+  background: #d8dfe9;
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px var(--black);
+}
+
+.uploader__icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.uploader__text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--black);
+}
+
+.uploader__subtext {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 6px;
+}
+
+.uploader__file-name {
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  background: var(--purple);
+  color: white;
+  border-radius: 6px;
+  padding: 4px 12px;
+  display: inline-block;
+}
+
+/* ===== PROGRESS INDICATOR ===== */
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress-track {
+  height: 18px;
+  background: var(--bg);
+  border: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--purple);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.progress-fill--blue {
+  background: var(--blue);
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: var(--border);
+  border-radius: 10px;
+  padding: 12px 24px;
+  background: var(--white);
+  color: var(--black);
+  box-shadow: var(--shadow);
+  transition: transform 0.12s, box-shadow 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--purple);
+  color: var(--white);
+}
+
+.btn--blue {
+  background: var(--blue);
+  color: var(--black);
+}
+
+.btn--danger {
+  background: #ff4d4d;
+  color: var(--white);
+}
+
+.btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+/* ===== TRANSCRIPT BOX ===== */
+.transcript-box {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.8;
+  color: var(--black);
+  background: var(--bg);
+  border: var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  min-height: 180px;
+  max-height: 360px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  position: relative;
+}
+
+.transcript-box::-webkit-scrollbar {
+  width: 8px;
+}
+
+.transcript-box::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.transcript-box::-webkit-scrollbar-thumb {
+  background: var(--purple);
+  border-radius: 99px;
+}
+
+.transcript-placeholder {
+  color: #999;
+  font-style: italic;
+}
+
+.transcript-wrapper {
+  position: relative;
+}
+
+.copy-btn {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  background: var(--white);
+  color: var(--black);
+  border: 2px solid var(--black);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0px var(--black);
+  transition: transform 0.12s, box-shadow 0.12s, background 0.12s;
+  float: right;
+}
+
+.copy-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px var(--black);
+  background: var(--purple);
+  color: var(--white);
+}
+
+.copy-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0px var(--black);
+}
+
+/* ===== STATUS BADGE ===== */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border: 2px solid var(--black);
+  border-radius: 99px;
+  background: var(--white);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  cursor: default;
+}
+
+.status-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  border-color: var(--purple);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #999;
+}
+
+.status-dot--idle {
+  background: #bbb;
+}
+
+.status-dot--loading {
+  background: var(--blue);
+  animation: pulse 1s infinite;
+}
+
+.status-dot--processing {
+  background: var(--purple);
+  animation: pulse 0.6s infinite;
+}
+
+.status-dot--done {
+  background: #4caf50;
+}
+
+.status-dot--error {
+  background: #f44;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .app-wrapper {
+    padding: 20px 16px 60px;
+  }
+
+  .cell:nth-child(odd),
+  .cell:nth-child(even) {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
