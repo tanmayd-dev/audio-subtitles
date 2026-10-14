@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# audio-subtitles
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Private, in-browser audio transcription — drop in an audio file and get timestamped subtitles without anything ever leaving your machine. Whisper runs **fully client-side** via Transformers.js in a Web Worker.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **100% local** — `Xenova/whisper-base` (~74M params) runs on-device with weights cached in the browser; no uploads, no server, no API key
+- **Multilingual** — auto-detects language; handles English, Hindi, and mixed code-switching
+- **Live streaming transcript** — segments appear as they're transcribed, with auto-scroll and copy-to-clipboard
+- **Subtitle export** — one-click **SRT** (timestamped) and **TXT** (plain text), filenames derived from the upload
+- **Long-audio support** — files over ~35s are processed in 30s sliding windows (2s overlap) with timestamp-offset correction and cross-chunk deduplication
+- **Resilient UX** — 4-step guided UI (upload → process → review → export) with dual model/transcription progress bars and clear status states
+- **Wide format support** — mp3, mp4, ogg, wav, webm, m4a, aac, flac, opus (decoded + resampled to 16kHz mono in-browser)
+- **Tested** — 33 Vitest tests covering transcription flow, audio utils, and export formats
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Core:** React 19, TypeScript, Vite
+- **AI:** HuggingFace Transformers.js v3, Whisper-base (ONNX), Web Worker + WASM (COOP/COEP isolated)
+- **Audio:** Web Audio API (`decodeAudioData`), custom linear resampler
+- **Testing:** Vitest + Testing Library + jsdom
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 18+
+- A modern browser (Web Workers + WebAssembly required)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Run
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev      # dev server
+npm run build    # production build
+npm run preview  # preview production build
+npm test         # run the test suite
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+On first run the app downloads the Whisper model (~200–300MB) from the HuggingFace CDN; subsequent loads use the cached copy.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Use
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Drop an audio file onto the upload zone (Step 1).
+2. Wait while the model loads and transcription streams in (Steps 2–3).
+3. Copy the transcript or export **SRT** / **TXT** (Step 4).
+
+## Project Structure
+
+```
+src/
+├── App.tsx                 # Orchestrator: worker lifecycle, progress, state machine
+├── worker/whisper.worker.ts# Model loading, chunked transcription, dedup
+├── utils/audio.ts          # Decode + resample to 16kHz mono
+├── utils/export.ts         # SRT/TXT generation + file download
+├── components/             # Uploader, progress bar, transcript, export controls
+└── test/                   # Vitest suite (33 tests)
 ```
