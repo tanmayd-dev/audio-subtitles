@@ -56,3 +56,20 @@ src/
 ├── components/             # Uploader, progress bar, transcript, export controls
 └── test/                   # Vitest suite (33 tests)
 ```
+
+## Deploy
+
+```bash
+npm run build     # -> dist/
+npm run preview   # serves dist/ *with* the required headers
+```
+
+**The host must send `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp`**, otherwise the browser withholds
+`SharedArrayBuffer` and the WASM worker cannot run with threads. Those headers
+are committed in [`public/_headers`](public/_headers), which **Netlify** and
+**Cloudflare Pages** read automatically — connect the repo and they just work.
+
+> ⚠️ **Not GitHub Pages.** Pages cannot set custom response headers, so this app
+> cannot be hosted there. (It will appear to load but transcription will fall
+> back to single-threaded WASM, which is far too slow for practical use.)
