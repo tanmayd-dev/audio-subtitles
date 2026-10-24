@@ -126,4 +126,4 @@ of `dist/`), which **Netlify** and **Cloudflare Pages** read automatically.
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0-or-later](LICENSE)
