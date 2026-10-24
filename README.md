@@ -39,6 +39,27 @@ npm test         # run the test suite
 
 On first run the app downloads the Whisper model (~200–300MB) from the HuggingFace CDN; subsequent loads use the cached copy.
 
+### First-run model download
+
+When you open the app, it immediately starts preparing the ASR model so you don't
+wait when you actually drop a file in.
+
+- **What downloads:** the [`Xenova/whisper-base`](https://huggingface.co/Xenova/whisper-base)
+  multilingual Whisper base model (~74M params) served as quantized ONNX weights
+  plus the WASM backend, ~200–300 MB total from the HuggingFace CDN
+  (`huggingface.co` / `cdn-lfs.huggingface.co`).
+- **When:** automatically, on page load (before any file is dropped). During the
+  download the status pill shows **"loading model"** with a progress bar that
+  tracks the download from 0–100%. Nothing is sent from your machine — it is a
+  plain CDN fetch, and no API key is needed.
+- **Where it's cached:** Transformers.js stores the weights in the browser's
+  [Cache API](https://developer.mozilla.org/en-US/docs/Web/API/Cache) partitioned
+  for this origin (visible in DevTools → Application → Cache Storage). The next
+  visit loads from cache — no re-download, near-instant model warmup.
+- **How to clear it:** delete the cache entries in DevTools (Application →
+  Cache Storage) or clear site data to reclaim the disk space and go back to a
+  fresh first-run download.
+
 ### Use
 
 1. Drop an audio file onto the upload zone (Step 1).
@@ -59,6 +80,9 @@ src/
 
 ## Deploy
 
+**CI:** GitHub Actions (`.github/workflows/ci.yml`) runs `npm test` (33 tests) and
+`npm run build` on every push and pull request.
+
 ```bash
 npm run build     # -> dist/
 npm run preview   # serves dist/ *with* the required headers
@@ -67,9 +91,39 @@ npm run preview   # serves dist/ *with* the required headers
 **The host must send `Cross-Origin-Opener-Policy: same-origin` and
 `Cross-Origin-Embedder-Policy: require-corp`**, otherwise the browser withholds
 `SharedArrayBuffer` and the WASM worker cannot run with threads. Those headers
-are committed in [`public/_headers`](public/_headers), which **Netlify** and
-**Cloudflare Pages** read automatically — connect the repo and they just work.
+are committed in [`public/_headers`](public/_headers) (Vite copies it to the root
+of `dist/`), which **Netlify** and **Cloudflare Pages** read automatically.
+
+### Deploying to Netlify
+
+1. Push this repo to GitHub (already hosted at `tanmayd-dev/audio-subtitles`).
+2. In the Netlify dashboard: **Add new site → Import an existing project →
+   GitHub → audio-subtitles**, authorize the Netlify GitHub app if asked.
+3. Netlify auto-detects `netlify.toml`: build command `npm run build`, publish
+   directory `dist`. No extra environment variables are needed. Click
+   **Deploy site**.
+4. Every subsequent push to any branch deploys (production deploys from the
+   default branch; Netlify also builds the CI status on each PR).
+5. Once deployed, verify the headers:
+
+   ```bash
+   curl -I https://<your-site>.netlify.app/ | grep -i cross-origin
+   # expect: Cross-Origin-Opener-Policy: same-origin
+   #         Cross-Origin-Embedder-Policy: require-corp
+   ```
+
+### Cloudflare Pages (alternative)
+
+1. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**
+   → pick `audio-subtitles`.
+2. Framework preset: **Vite** (build `npm run build`, output `dist`).
+3. Headers: Cloudflare Pages also honours `public/_headers` shipped in `dist/`,
+   so the COOP/COEP headers apply with no extra configuration.
 
 > ⚠️ **Not GitHub Pages.** Pages cannot set custom response headers, so this app
 > cannot be hosted there. (It will appear to load but transcription will fall
 > back to single-threaded WASM, which is far too slow for practical use.)
+
+## License
+
+[MIT](LICENSE)
