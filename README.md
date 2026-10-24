@@ -24,7 +24,7 @@ Private, in-browser audio transcription — drop in an audio file and get timest
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22+ (or Node.js 20.19+)
 - A modern browser (Web Workers + WebAssembly required)
 
 ### Run
@@ -37,7 +37,7 @@ npm run preview  # preview production build
 npm test         # run the test suite
 ```
 
-On first run the app downloads the Whisper model (~200–300MB) from the HuggingFace CDN; subsequent loads use the cached copy.
+On first run the app downloads the Whisper model (ONNX weights ranging from ~75 MB quantized to ~290 MB unquantized depending on precision) from the HuggingFace CDN; subsequent loads use the cached copy.
 
 ### First-run model download
 
@@ -45,9 +45,10 @@ When you open the app, it immediately starts preparing the ASR model so you don'
 wait when you actually drop a file in.
 
 - **What downloads:** the [`Xenova/whisper-base`](https://huggingface.co/Xenova/whisper-base)
-  multilingual Whisper base model (~74M params) served as quantized ONNX weights
-  plus the WASM backend, ~200–300 MB total from the HuggingFace CDN
-  (`huggingface.co` / `cdn-lfs.huggingface.co`).
+  multilingual Whisper base model (~74M params): ONNX weights ranging from ~75 MB
+  quantized to ~290 MB unquantized depending on precision, plus the WASM backend and
+  tokenizer from the HuggingFace CDN (`huggingface.co` / `cdn-lfs.huggingface.co`).
+  A real first download can be measured once.
 - **When:** automatically, on page load (before any file is dropped). During the
   download the status pill shows **"loading model"** with a progress bar that
   tracks the download from 0–100%. Nothing is sent from your machine — it is a
