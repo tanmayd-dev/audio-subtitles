@@ -22,6 +22,16 @@
 
 import { pipeline, env } from '@huggingface/transformers';
 
+// Hugging Face's CloudFront CDN blocks requests whose Referer matches *.workers.dev with 404 (surfacing as CORS errors).
+// Enforce referrerPolicy: 'no-referrer' on worker fetches so model downloads succeed across all hosts.
+const originalFetch = self.fetch.bind(self);
+self.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    return originalFetch(input, {
+        ...init,
+        referrerPolicy: 'no-referrer',
+    });
+};
+
 // Use the browser's Cache API for model weights to prevent re-downloading.
 env.allowLocalModels = false;
 env.useBrowserCache = true;
