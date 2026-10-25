@@ -50,23 +50,62 @@ interface ChunkResult {
 }
 
 self.addEventListener('message', async (event: MessageEvent) => {
-    const { type } = event.data as { type: string; audio?: Float32Array };
+    const { type, options, isLive } = event.data as {
+        type: string;
+        audio?: Float32Array;
+        options?: { task?: 'transcribe' | 'translate'; language?: string };
+        isLive?: boolean;
+    };
 
     if (type === 'load') {
+        const filesProgress: Record<string, number> = {};
+        let lastReportedPct = 0;
+        // Total expected size of Xenova/whisper-base ONNX weights & tokenizers is ~79 MB
+        const EXPECTED_TOTAL_BYTES = 79_000_000;
+
         try {
             asr = await pipeline(
                 'automatic-speech-recognition',
                 MODEL_ID,
                 {
-                    progress_callback: (progressEvent: { progress?: number; status?: string }) => {
+                    progress_callback: (progressEvent: {
+                        status?: string;
+                        file?: string;
+                        loaded?: number;
+                        total?: number;
+                        progress?: number;
+                    }) => {
                         if (progressEvent.status === 'downloading' || progressEvent.status === 'progress') {
-                            const pct = Math.round(progressEvent.progress ?? 0);
-                            self.postMessage({ type: 'model_loading_progress', progress: pct });
+                            if (progressEvent.file && progressEvent.loaded != null) {
+                                filesProgress[progressEvent.file] = progressEvent.loaded;
+                                const totalLoaded = Object.values(filesProgress).reduce(
+                                    (acc, bytes) => acc + bytes,
+                                    0
+                                );
+
+                                // Map download progress to 0% - 80% (leaving remaining 20% for ONNX session compilation)
+                                const downloadPct = Math.min(
+                                    80,
+                                    Math.round((totalLoaded / EXPECTED_TOTAL_BYTES) * 80)
+                                );
+
+                                if (downloadPct > lastReportedPct) {
+                                    lastReportedPct = downloadPct;
+                                    self.postMessage({ type: 'model_loading_progress', progress: downloadPct });
+                                }
+                            } else if (progressEvent.progress != null) {
+                                const scaledPct = Math.min(80, Math.round(progressEvent.progress * 0.8));
+                                if (scaledPct > lastReportedPct) {
+                                    lastReportedPct = scaledPct;
+                                    self.postMessage({ type: 'model_loading_progress', progress: scaledPct });
+                                }
+                            }
                         }
                     },
                 }
             );
 
+            self.postMessage({ type: 'model_loading_progress', progress: 100 });
             self.postMessage({ type: 'model_ready' });
         } catch (err) {
             self.postMessage({ type: 'error', message: String(err) });
@@ -94,23 +133,27 @@ self.addEventListener('message', async (event: MessageEvent) => {
 
             // If audio is short enough for one pass, process directly
             if (totalDuration <= CHUNK_SECS + 5) {
-                self.postMessage({ type: 'transcription_progress', progress: 10 });
+                if (!isLive) {
+                    self.postMessage({ type: 'transcription_progress', progress: 15 });
+                }
 
                 const output = await asr(audio, {
                     return_timestamps: true,
-                    language: undefined,
-                    task: 'transcribe',
+                    language: options?.language || undefined,
+                    task: options?.task || 'transcribe',
                 });
 
                 const chunks: ChunkResult[] =
                     (output as { chunks?: ChunkResult[] }).chunks ?? [];
 
                 for (const chunk of chunks) {
-                    self.postMessage({ type: 'chunk', data: chunk });
+                    self.postMessage({ type: 'chunk', data: chunk, isLive });
                 }
 
-                self.postMessage({ type: 'transcription_progress', progress: 100 });
-                self.postMessage({ type: 'complete', chunks });
+                if (!isLive) {
+                    self.postMessage({ type: 'transcription_progress', progress: 100 });
+                }
+                self.postMessage({ type: 'complete', chunks, isLive });
                 return;
             }
 
@@ -125,16 +168,19 @@ self.addEventListener('message', async (event: MessageEvent) => {
                 const segment = audio.slice(offset, end);
                 const segmentOffsetSecs = offset / SAMPLE_RATE;
 
-                // Report progress at the START of each segment
-                const progressPct = Math.round((segmentIndex / totalSegments) * 95);
-                self.postMessage({ type: 'transcription_progress', progress: progressPct });
-
                 // Transcribe this segment (no chunking — it's already <30s)
                 const output = await asr(segment, {
                     return_timestamps: true,
-                    language: undefined,
-                    task: 'transcribe',
+                    language: options?.language || undefined,
+                    task: options?.task || 'transcribe',
                 });
+
+                // Report progress at the END of each completed segment
+                segmentIndex++;
+                const progressPct = Math.round((segmentIndex / totalSegments) * 95);
+                if (!isLive) {
+                    self.postMessage({ type: 'transcription_progress', progress: progressPct });
+                }
 
                 const segChunks: ChunkResult[] =
                     (output as { chunks?: ChunkResult[] }).chunks ?? [];
