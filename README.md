@@ -93,33 +93,46 @@ npm run preview   # serves dist/ *with* the required headers
 `Cross-Origin-Embedder-Policy: require-corp`**, otherwise the browser withholds
 `SharedArrayBuffer` and the WASM worker cannot run with threads. Those headers
 are committed in [`public/_headers`](public/_headers) (Vite copies it to the root
-of `dist/`), which **Netlify** and **Cloudflare Pages** read automatically.
+of `dist/`), which Cloudflare Workers/Pages read automatically. Nothing needs to
+be configured in the dashboard.
 
-### Deploying to Netlify
+### Worker deployment (declarative)
 
-1. Push this repo to GitHub (already hosted at `tanmayd-dev/audio-subtitles`).
-2. In the Netlify dashboard: **Add new site → Import an existing project →
-   GitHub → audio-subtitles**, authorize the Netlify GitHub app if asked.
-3. Netlify auto-detects `netlify.toml`: build command `npm run build`, publish
-   directory `dist`. No extra environment variables are needed. Click
-   **Deploy site**.
-4. Every subsequent push to any branch deploys (production deploys from the
-   default branch; Netlify also builds the CI status on each PR).
-5. Once deployed, verify the headers:
+Deployment settings live in [`wrangler.json`](wrangler.json):
+
+- `assets.directory` = `./dist` with SPA fallback,
+- `env.production.routes` declares the production custom domain,
+- cross-origin isolation headers come from `dist/_headers`.
+
+1. Replace the `subtitles.example.com` placeholder in `env.production.routes`
+   with the real hostname.
+2. Build, check the config, and deploy:
 
    ```bash
-   curl -I https://<your-site>.netlify.app/ | grep -i cross-origin
+   npm ci
+   npm run build
+   npm run check:deploy      # fails while the placeholder is still there
+   npx wrangler deploy --env production
+   ```
+
+3. Verify the headers:
+
+   ```bash
+   curl -I https://subtitles.example.com/ | grep -i cross-origin
    # expect: Cross-Origin-Opener-Policy: same-origin
    #         Cross-Origin-Embedder-Policy: require-corp
    ```
+
+`npm run check:deploy` also fails if `public/_headers` lost either header, so a
+checkout alone reproduces the live deployment.
 
 ### Cloudflare Pages (alternative)
 
 1. Cloudflare dashboard → **Workers & Pages → Create → Pages → Connect to Git**
    → pick `audio-subtitles`.
 2. Framework preset: **Vite** (build `npm run build`, output `dist`).
-3. Headers: Cloudflare Pages also honours `public/_headers` shipped in `dist/`,
-   so the COOP/COEP headers apply with no extra configuration.
+3. Headers: Cloudflare Pages honours `public/_headers` shipped in `dist/`, so
+   the COOP/COEP headers apply with no extra configuration.
 
 > ⚠️ **Not GitHub Pages.** Pages cannot set custom response headers, so this app
 > cannot be hosted there. (It will appear to load but transcription will fall
